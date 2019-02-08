@@ -138,11 +138,11 @@ namespace ComitAPI.Controllers
         {
             using (var db = new ComitAPIDBContext())
             {
-                var padronDataVersion = db.PadronData.Find(1)?.Version;
+                var padronDataVersion = db.PadronData.Find(1)?.Version; //harcodeamos el id pero si en algun momento hay mas padrones hay que armar las relaciones en bd y acomodar aca
 
                 var versionArchivoNuevo = nombreArchivo.Split('_')[1];
 
-                if (padronDataVersion != null)
+                if (padronDataVersion != null) //checkeamos si es null para la primera vez que se carga
                 {
                     return (padronDataVersion != versionArchivoNuevo);
                 }
