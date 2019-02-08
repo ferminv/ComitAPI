@@ -23,6 +23,7 @@ namespace ComitAPI.Models
     public class ComitAPIDBContext : DbContext
     {
         public DbSet<PadronTISH> Padron { get; set; }
+        public DbSet<PadronData> PadronData { get; set; }
 
         public ComitAPIDBContext() : base(@"Server=192.168.1.201;Port=3306;Database=comit_api;uid=root;pwd=ms!574;")
         {

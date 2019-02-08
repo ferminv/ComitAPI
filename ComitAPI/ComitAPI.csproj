@@ -185,6 +185,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Context\ComitAPIContext.cs" />
+    <Compile Include="Models\PadronData.cs" />
     <Compile Include="Models\PadronTISH.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

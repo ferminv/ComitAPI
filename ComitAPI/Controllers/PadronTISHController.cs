@@ -26,24 +26,24 @@ namespace ComitAPI.Controllers
         }
 
         [HttpGet]
-        [Route("padrontish/cuit/{id}")]
-        public PadronTISH Get(Int64 id)
+        [Route("padrontish/cuit/{cuit}")]
+        public PadronTISH Get(Int64 cuit)
         {
             using (var db = new ComitAPIDBContext())
             {
-                return db.Padron.Find(id);
+                return db.Padron.Find(cuit);
 
             }
         }
 
         [HttpGet]
-        [Route("padrontish/percepcion/{id}")]
+        [Route("padrontish/percepcion/{cuit}")]
         [ResponseType(typeof(Decimal))]
-        public Decimal Percepcion(Int64 id)
+        public Decimal Percepcion(Int64 cuit)
         {
             using (var db = new ComitAPIDBContext())
             {
-                var p = db.Padron.Find(id);
+                var p = db.Padron.Find(cuit);
                 if (p != null)
                     return p.AlicuotaPercepcion;
                 else
@@ -53,13 +53,13 @@ namespace ComitAPI.Controllers
         }
 
         [HttpGet]
-        [Route("padrontish/retencion/{id}")]
+        [Route("padrontish/retencion/{cuit}")]
         [ResponseType(typeof(Decimal))]
-        public Decimal Retencion(Int64 id)
+        public Decimal Retencion(Int64 cuit)
         {
             using (var db = new ComitAPIDBContext())
             {
-                var p = db.Padron.Find(id);
+                var p = db.Padron.Find(cuit);
                 if (p != null)
                     return p.AlicuotaRetencion;
                 else
@@ -74,57 +74,94 @@ namespace ComitAPI.Controllers
             try
             {
                 var httpRequest = HttpContext.Current.Request;
-
+                
                 foreach (string file in httpRequest.Files)
                 {
-                    HttpResponseMessage response = Request.CreateResponse(HttpStatusCode.Created);
-
                     var postedFile = httpRequest.Files[file];
-                    var filePath = String.Empty;
-                    if (postedFile != null && postedFile.ContentLength > 0)
+                    if (nuevaVersion(postedFile.FileName)) 
                     {
-                        filePath = HttpContext.Current.Server.MapPath("~/" + postedFile.FileName);
+                        var filePath = HttpContext.Current.Server.MapPath("~/" + postedFile.FileName);
                         postedFile.SaveAs(filePath);
-                    }
 
-                    var message1 = string.Format("Archivo subido correctamente! Que tenga un buen dia.");
-                    Task.Run(() =>
-                    {
-                        using (var db = new ComitAPIDBContext())
+                        Task.Run(() =>
                         {
-                            var sr = new StreamReader(filePath);
-                            var linea = sr.ReadLine();
-                            do
+                            using (var db = new ComitAPIDBContext())
                             {
-                                var datos = linea.Split(';');
-                                string nCUIT = datos[3];
+                                //guardamos la data de la nueva version del padron
+                                var padronData = db.PadronData.Find(1);
+                                padronData.Version = postedFile.FileName.Split('_')[1];
+                                padronData.FechaSubida = DateTime.Today.Date;
+                                //limpiamos el padron para cargar los nuevos registros
+                                db.Database.ExecuteSqlCommand("TRUNCATE TABLE padron_tish;");
+                                db.SaveChanges();
 
-                                string Percepcion = datos[4];
-                                string Retencion = datos[5];
-                                linea = sr.ReadLine();
-                                var p = new PadronTISH()
+                                //leemos archivo y guardamos registro a registro en la bd
+                                var sr = new StreamReader(filePath);
+                                var linea = sr.ReadLine();
+                                do
                                 {
-                                    Cuit = Convert.ToInt64(nCUIT),
-                                    AlicuotaPercepcion = Convert.ToDecimal(Percepcion),
-                                    AlicuotaRetencion = Convert.ToDecimal(Retencion)
-                                };
-                                db.Padron.Add(p);
-                            }
-                            while (linea != null);
-                            sr.Close();
-                            db.SaveChanges();
-                        }
-                    });
+                                    var datos = linea.Split(';');
 
-                    return Request.CreateErrorResponse(HttpStatusCode.Created, message1); 
+                                    var nCUIT = datos[3];
+                                    var percepcion = datos[4];
+                                    var retencion = datos[5];
+                                    var p = new PadronTISH
+                                    {
+                                        Cuit = Convert.ToInt64(nCUIT),
+                                        AlicuotaPercepcion = Convert.ToDecimal(percepcion),
+                                        AlicuotaRetencion = Convert.ToDecimal(retencion)
+                                    };
+                                    db.Padron.Add(p);
+
+                                    linea = sr.ReadLine();
+                                }
+                                while (linea != null);
+                                sr.Close();
+                                db.SaveChanges();
+                            }
+                        });
+                    }
+                    else
+                    {
+                        return Request.CreateErrorResponse(HttpStatusCode.Created, "El Archivo ya esta en su ultima version.");
+                    }
                 }
-                return Request.CreateResponse(HttpStatusCode.NotFound);
+                return Request.CreateErrorResponse(HttpStatusCode.Created, "Archivo(s) subido(s) correctamente! Que tenga un buen dia.");
             }
             catch (Exception ex)
             {
-                return Request.CreateResponse(HttpStatusCode.NotFound, ex.Message);
+                return Request.CreateErrorResponse(HttpStatusCode.NotFound, ex.Message);
             }
         }
+
+        private static Boolean nuevaVersion(string nombreArchivo)
+        {
+            using (var db = new ComitAPIDBContext())
+            {
+                var padronDataVersion = db.PadronData.Find(1)?.Version;
+
+                var versionArchivoNuevo = nombreArchivo.Split('_')[1];
+
+                if (padronDataVersion != null)
+                {
+                    return (padronDataVersion != versionArchivoNuevo);
+                }
+                else //si no hay nada cargado
+                {
+                    var pd = new PadronData
+                    {
+                        IdPadron = 1,
+                        Version = versionArchivoNuevo,
+                        FechaSubida = DateTime.Today.Date
+
+                    };
+                    db.PadronData.Add(pd);
+                    db.SaveChanges();
+                    return true;
+                }
+            }
+        }
+
     }
 
 }
