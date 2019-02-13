@@ -119,6 +119,8 @@ namespace ComitAPI.Controllers
                                 sr.Close();
                                 db.SaveChanges();
                             }
+                            if (File.Exists(filePath))
+                                File.Delete(filePath);
                         });
                     }
                     else

@@ -1,21 +1,20 @@
 ﻿<header>
     <div class="content-wrapper">
         <div class="float-left">
-            <p class="site-title">
-                <a href="~/">ASP.NET Web API File Upload</a>
-            </p>
         </div>
     </div>
 </header>
 <div id="body">
-    <form name="form1" method="post" action="../padrontish/actualizar" enctype="multipart/form-data">
+    <form class="form-inline" name="form1" method="post" action="../padrontish/actualizar" enctype="multipart/form-data">
         <div>
-            <label>
-                Brows File
+            <br />
+            <label class="control-label">
+                Buscar Padron TISH
             </label>
-            <input name="myFile" type="file" required/>
+            <input class="btn-default" name="myFile" type="file" required/>
         </div>
+        <br />
         <div>
-            <input type="submit" value="Upload" />
+            <input style="font-size:medium" class="btn-primary" type="submit" value="Subir" />
         </div>
     </form>
